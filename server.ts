@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import asyncHandler from 'express-async-handler';
 import admin from 'firebase-admin';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import path from 'path';
 
 const app = express();
@@ -15,25 +15,28 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Initialize Firebase Admin
-let serviceAccount;
+// Initialize Firebase Admin - CÁCH ĐƠN GIẢN NHẤT
 try {
-  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-    // Sửa lỗi định dạng private_key trên Vercel
-    if (serviceAccount.private_key) {
-      serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
-    }
+  if (process.env.FB_PRIVATE_KEY) {
+    // Nếu chạy trên Vercel
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: process.env.FB_PROJECT_ID,
+        clientEmail: process.env.FB_CLIENT_EMAIL,
+        privateKey: process.env.FB_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      }),
+      databaseURL: "https://unichat-acfc2-default-rtdb.firebaseio.com"
+    });
+    console.log("Firebase initialized via Simple ENV");
   } else {
-    serviceAccount = JSON.parse(
-      readFileSync(path.resolve('./serviceAccountKey.json'), 'utf8')
-    );
+    // Nếu chạy ở Local (dùng file json)
+    const serviceAccount = JSON.parse(readFileSync(path.resolve('./serviceAccountKey.json'), 'utf8'));
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      databaseURL: "https://unichat-acfc2-default-rtdb.firebaseio.com"
+    });
+    console.log("Firebase initialized via Local File");
   }
-
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    databaseURL: process.env.FIREBASE_DATABASE_URL || "https://unichat-acfc2-default-rtdb.firebaseio.com"
-  });
 } catch (error) {
   console.error("Firebase initialization failed:", error);
 }
@@ -126,7 +129,7 @@ app.post('/api/members/:id/payments', asyncHandler(async (req: any, res: any) =>
 }));
 
 app.delete('/api/payments/:id', asyncHandler(async (req: any, res: any) => {
-  const { id } = req.query; // We need memberId to delete from member/payments
+  const { id } = req.query;
   const memberId = req.query.memberId as string;
   
   if (!id || !memberId) {
@@ -137,7 +140,6 @@ app.delete('/api/payments/:id', asyncHandler(async (req: any, res: any) => {
   res.sendStatus(204);
 }));
 
-// Keep alive
 if (process.env.NODE_ENV !== 'production') {
   app.listen(port, () => {
     console.log(`Backend server (Firebase Admin) listening at http://localhost:${port}`);
