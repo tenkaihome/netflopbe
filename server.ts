@@ -6,20 +6,29 @@ import { readFileSync } from 'fs';
 import path from 'path';
 
 const app = express();
-const port = 4000;
+const port = process.env.PORT || 4000;
 
 app.use(cors());
 app.use(express.json());
 
 // Initialize Firebase Admin
-const serviceAccount = JSON.parse(
-  readFileSync(path.resolve('./serviceAccountKey.json'), 'utf8')
-);
+let serviceAccount;
+try {
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  } else {
+    serviceAccount = JSON.parse(
+      readFileSync(path.resolve('./serviceAccountKey.json'), 'utf8')
+    );
+  }
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  databaseURL: "https://unichat-acfc2-default-rtdb.firebaseio.com"
-});
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    databaseURL: process.env.FIREBASE_DATABASE_URL || "https://unichat-acfc2-default-rtdb.firebaseio.com"
+  });
+} catch (error) {
+  console.error("Firebase initialization failed:", error);
+}
 
 const db = admin.database();
 const membersRef = db.ref('members');
@@ -126,3 +135,5 @@ app.listen(port, () => {
 
 // Keep alive
 setInterval(() => {}, 1000000);
+
+export default app;
