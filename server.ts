@@ -20,6 +20,10 @@ let serviceAccount;
 try {
   if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    // Sửa lỗi định dạng private_key trên Vercel
+    if (serviceAccount.private_key) {
+      serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+    }
   } else {
     serviceAccount = JSON.parse(
       readFileSync(path.resolve('./serviceAccountKey.json'), 'utf8')
