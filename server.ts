@@ -8,7 +8,11 @@ import path from 'path';
 const app = express();
 const port = process.env.PORT || 4000;
 
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 // Initialize Firebase Admin
@@ -129,11 +133,11 @@ app.delete('/api/payments/:id', asyncHandler(async (req: any, res: any) => {
   res.sendStatus(204);
 }));
 
-app.listen(port, () => {
-  console.log(`Backend server (Firebase Admin) listening at http://localhost:${port}`);
-});
-
 // Keep alive
-setInterval(() => {}, 1000000);
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(port, () => {
+    console.log(`Backend server (Firebase Admin) listening at http://localhost:${port}`);
+  });
+}
 
 export default app;
