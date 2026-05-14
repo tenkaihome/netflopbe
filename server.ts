@@ -140,6 +140,25 @@ app.delete('/api/payments/:id', asyncHandler(async (req: any, res: any) => {
   res.sendStatus(204);
 }));
 
+// Thêm thành viên mới
+app.post('/api/members', asyncHandler(async (req: any, res: any) => {
+  const { name, startDate } = req.body;
+  const newRef = membersRef.push();
+  await newRef.set({
+    name: name || 'Thành viên mới',
+    startDate: startDate || new Date().toISOString().split('T')[0],
+    initialBalance: 0
+  });
+  res.json({ id: newRef.key, name, startDate, initialBalance: 0, payments: [] });
+}));
+
+// Xóa thành viên
+app.delete('/api/members/:id', asyncHandler(async (req: any, res: any) => {
+  const { id } = req.params;
+  await membersRef.child(id).remove();
+  res.sendStatus(204);
+}));
+
 if (process.env.NODE_ENV !== 'production') {
   app.listen(port, () => {
     console.log(`Backend server (Firebase Admin) listening at http://localhost:${port}`);
