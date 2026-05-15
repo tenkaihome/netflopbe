@@ -129,14 +129,14 @@ app.post('/api/members/:id/payments', asyncHandler(async (req: any, res: any) =>
 }));
 
 app.delete('/api/payments/:id', asyncHandler(async (req: any, res: any) => {
-  const { id } = req.query;
+  const { id } = req.params;
   const memberId = req.query.memberId as string;
   
   if (!id || !memberId) {
     return res.status(400).send('Missing id or memberId');
   }
 
-  await membersRef.child(memberId).child('payments').child(id as string).remove();
+  await membersRef.child(memberId).child('payments').child(id).remove();
   res.sendStatus(204);
 }));
 
